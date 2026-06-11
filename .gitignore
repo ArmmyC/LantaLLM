@@ -1,0 +1,49 @@
+# Secrets and local environment configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.webui_secret_key
+
+# Python and Conda environments
+.venv*/
+venv/
+env/
+envs/
+__pycache__/
+*.py[cod]
+
+# Model weights and Hugging Face caches
+models/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+*.onnx
+.cache/
+
+# JavaScript dependencies and build output
+node_modules/
+dist/
+build/
+.vercel/
+
+# Runtime files and generated logs
+logs/
+*.log
+*.pid
+.tunnel-runtime/
+tmp/
+temp/
+
+# Local editor, OS, and Codex artifacts
+.codex-remote-attachments/
+.codex/
+.agents/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LLM Test Chat</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <section class="brand-block" aria-label="Application">
+          <div class="brand-mark" aria-hidden="true">LT</div>
+          <div>
+            <h1>LLM Test</h1>
+            <p>Private Lanta model gateway</p>
+          </div>
+        </section>
+
+        <section class="status-card" aria-label="Connection">
+          <div class="status-line">
+            <span id="connectionDot" class="status-dot"></span>
+            <span id="connectionText">Checking gateway</span>
+          </div>
+          <button id="checkConnection" class="icon-button" type="button" title="Check connection" aria-label="Check connection">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>
+          </button>
+        </section>
+
+        <section class="model-card" aria-label="Model controls">
+          <label>
+            <span>Model</span>
+            <input id="model" value="qwen36-27b" spellcheck="false" />
+          </label>
+
+          <details class="settings-panel" open>
+            <summary>
+              <span class="summary-label">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.08a1.7 1.7 0 0 0-1.04-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.08A1.7 1.7 0 0 0 4.64 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.54a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.08a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87c.24.62.82 1.03 1.49 1.04H21a2 2 0 1 1 0 4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+                Settings
+              </span>
+              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+
+            <label>
+              <span>Site password</span>
+              <input id="sitePassword" type="password" autocomplete="current-password" placeholder="Required when enabled" />
+            </label>
+
+            <label>
+              <span>System prompt</span>
+              <textarea id="systemPrompt" rows="3">You are an expert low-power digital IC RTL designer specializing in RFID tag/baseband logic.</textarea>
+            </label>
+
+            <div class="field-row">
+              <label class="range-field">
+                <span>Max tokens</span>
+                <input id="maxTokens" type="range" min="1" max="32768" step="1" value="1024" />
+                <input id="maxTokensValue" class="range-value" type="number" min="1" max="32768" step="1" value="1024" aria-label="Max tokens exact value" />
+              </label>
+              <label class="range-field">
+                <span>Temperature</span>
+                <input id="temperature" type="range" min="0" max="2" step="0.1" value="0.7" />
+                <input id="temperatureValue" class="range-value" type="number" min="0" max="2" step="0.1" value="0.7" aria-label="Temperature exact value" />
+              </label>
+            </div>
+
+            <label class="switch-row">
+              <input id="thinking" type="checkbox" />
+              <span>
+                <strong>Thinking mode</strong>
+                <small>Qwen reasoning template</small>
+              </span>
+            </label>
+          </details>
+        </section>
+
+        <section class="sidebar-actions" aria-label="Session actions">
+          <button id="clearChat" class="secondary" type="button">Clear chat</button>
+          <button id="exportChat" class="secondary" type="button">Export</button>
+        </section>
+      </aside>
+
+      <section class="chat-panel">
+        <header class="topbar">
+          <div>
+            <h2>LLM Test Chat</h2>
+            <div id="sessionTitle" class="session-model">qwen36-27b</div>
+          </div>
+          <div class="topbar-actions">
+            <span id="messageCount" class="metric">0 messages</span>
+            <span id="thinkingState" class="metric">Thinking off</span>
+          </div>
+        </header>
+
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <form id="chatForm" class="composer">
+          <div class="composer-box">
+            <textarea id="prompt" rows="1" placeholder="Ask Qwen something..."></textarea>
+            <div id="fileStatus" class="attachment-status" aria-live="polite"></div>
+            <div id="fileWarning" class="file-warning" role="alert"></div>
+            <div class="composer-meta">
+              <label class="attach-button" title="Attach file context" aria-label="Attach file context">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 1 1 5.66 5.66l-9.2 9.19a2 2 0 1 1-2.82-2.82l8.48-8.49"/></svg>
+                <input id="fileInput" type="file" />
+              </label>
+              <span class="shortcut">Enter to send · Ctrl+Enter for newline</span>
+              <span id="draftCount">0 chars</span>
+              <button id="sendButton" type="submit">
+                <span>Send</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4z"/></svg>
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <template id="messageTemplate">
+      <article class="message">
+        <div class="role"></div>
+        <div class="content">
+          <div class="message-attachment" hidden></div>
+          <div class="message-text"></div>
+        </div>
+        <button class="copy-message" type="button">Copy</button>
+      </article>
+    </template>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

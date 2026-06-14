@@ -5,6 +5,7 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { handleChatRequest } from "./api/chat.js";
+import { handleModelsRequest } from "./api/models.js";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const publicDir = join(root, "public");
@@ -58,6 +59,17 @@ const server = createServer(async (req, res) => {
         res.end();
         reader.releaseLock();
       }
+      return;
+    }
+
+    if (url.pathname === "/api/models") {
+      const request = {
+        method: req.method,
+        headers: req.headers,
+      };
+      const response = await handleModelsRequest(request);
+      res.writeHead(response.status, Object.fromEntries(response.headers));
+      res.end(await response.text());
       return;
     }
 

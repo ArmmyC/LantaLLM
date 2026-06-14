@@ -454,6 +454,22 @@ async function sendChat(userContent) {
 async function checkConnection() {
   setConnection("", "Checking gateway");
   try {
+    const modelsResponse = await fetch("/api/models", {
+      headers: {
+        "x-site-password": els.sitePassword.value,
+      },
+    });
+
+    if (modelsResponse.ok) {
+      const modelsData = await modelsResponse.json();
+      const servedModel = modelsData?.data?.[0]?.id;
+      if (servedModel && servedModel !== els.model.value.trim()) {
+        els.model.value = servedModel;
+        storage.set("model", servedModel);
+        updateChrome();
+      }
+    }
+
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: {

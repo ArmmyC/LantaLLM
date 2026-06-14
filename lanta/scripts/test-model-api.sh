@@ -33,7 +33,42 @@ curl -fsS --max-time 10 "$OPENAI_BASE_URL/models" | "$ENV/bin/python" -m json.to
 
 echo
 echo "2. Sending chat completion..."
-"$ENV/bin/python" scripts/test-vllm-chat.py
+"$ENV/bin/python" - <<'PY'
+import json
+import os
+import urllib.request
+
+base_url = os.environ["OPENAI_BASE_URL"].rstrip("/")
+model = os.environ["MODEL"]
+api_key = os.environ.get("OPENAI_API_KEY", "EMPTY")
+
+payload = {
+    "model": model,
+    "messages": [{"role": "user", "content": "Reply with exactly: coder online"}],
+    "max_tokens": 256,
+    "temperature": 0,
+}
+
+request = urllib.request.Request(
+    f"{base_url}/chat/completions",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    },
+    method="POST",
+)
+
+with urllib.request.urlopen(request, timeout=120) as response:
+    data = json.loads(response.read().decode("utf-8"))
+
+message = data["choices"][0]["message"]
+content = message.get("content") or ""
+reasoning = message.get("reasoning") or message.get("reasoning_content") or ""
+print(content or reasoning)
+if "coder online" not in (content + "\n" + reasoning).lower():
+    raise SystemExit(f"Unexpected response: {message!r}")
+PY
 
 echo
 echo "OK: vLLM API test passed."

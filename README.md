@@ -14,6 +14,7 @@ lanta-llm-hosting/
   lanta/legacy-qwen36/  Older Qwen3.6-specific scripts kept for reference.
   docs/                 Setup, model swapping, UI, and friend usage guides.
   HOW_TO_USE.md         Command-only operations runbook.
+  HOW_TO_SWAP.md        Same-endpoint model swap runbook.
 ```
 
 ## Quick Start
@@ -37,7 +38,7 @@ npm run dev
 
 Open `http://127.0.0.1:5177`.
 
-See [HOW_TO_USE.md](HOW_TO_USE.md) for the complete operational command list.
+See [HOW_TO_USE.md](HOW_TO_USE.md) for the complete operational command list and [HOW_TO_SWAP.md](HOW_TO_SWAP.md) for model swapping.
 
 ## Lanta Deployment
 

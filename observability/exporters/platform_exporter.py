@@ -20,10 +20,13 @@ def env(name: str, default: str) -> str:
     return os.environ.get(name, default)
 
 
-def http_json(url: str, timeout: float) -> tuple[bool, float, dict[str, Any] | None, str]:
+def http_json(url: str, timeout: float, headers: dict[str, str] | None = None) -> tuple[bool, float, dict[str, Any] | None, str]:
     started = time.time()
     try:
-        request = Request(url, headers={"accept": "application/json"})
+        request_headers = {"accept": "application/json"}
+        if headers:
+            request_headers.update(headers)
+        request = Request(url, headers=request_headers)
         with urlopen(request, timeout=timeout) as response:
             body = response.read().decode("utf-8")
             latency = (time.time() - started) * 1000
@@ -80,6 +83,7 @@ def collect_slurm_metrics() -> list[str]:
 def collect_metrics() -> str:
     timeout = float(env("HEALTH_TIMEOUT_SECONDS", "3"))
     litellm_base = env("LITELLM_BASE_URL", "http://127.0.0.1:4000").rstrip("/")
+    litellm_api_key = env("LITELLM_API_KEY", "")
     vllm_base = env("VLLM_BASE_URL", "http://127.0.0.1:8000/v1").rstrip("/")
     lines = [
         "# HELP lanta_platform_up Platform exporter health.",
@@ -87,7 +91,8 @@ def collect_metrics() -> str:
         metric("lanta_platform_up", 1),
     ]
 
-    ok, latency, _, message = http_json(f"{litellm_base}/health", timeout)
+    litellm_headers = {"Authorization": f"Bearer {litellm_api_key}"} if litellm_api_key else None
+    ok, latency, _, message = http_json(f"{litellm_base}/health", timeout, litellm_headers)
     lines.append(metric("lanta_litellm_reachable", 1 if ok else 0, {"message": message[:80]}))
     lines.append(metric("lanta_litellm_latency_ms", round(latency, 3)))
 

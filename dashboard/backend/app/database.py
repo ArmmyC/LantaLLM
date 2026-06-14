@@ -6,7 +6,15 @@ from pathlib import Path
 from typing import Any
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+def discover_repo_root() -> Path:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "benchmark").is_dir() and (parent / "dashboard").is_dir():
+            return parent
+    return current.parents[1]
+
+
+REPO_ROOT = discover_repo_root()
 DEFAULT_STORE = REPO_ROOT / "benchmark" / "results" / "benchmark-results.json"
 
 
@@ -93,7 +101,7 @@ def safe_artifact_path(relative_path: str) -> Path | None:
         if len(parts) >= 2 and parts[0] == "benchmark" and parts[1] == "artifacts":
             candidate = root.joinpath(*parts[2:]).resolve()
         else:
-            candidate = (REPO_ROOT / raw).resolve()
+            candidate = root.joinpath(*parts).resolve()
     try:
         candidate.relative_to(root)
     except ValueError:

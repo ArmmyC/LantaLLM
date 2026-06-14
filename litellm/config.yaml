@@ -1,7 +1,7 @@
 model_list:
   - model_name: active-lanta-model
     litellm_params:
-      model: openai/active-lanta-model
+      model: openai/qwen36-27b
       api_base: os.environ/VLLM_BASE_URL
       api_key: os.environ/VLLM_API_KEY
 

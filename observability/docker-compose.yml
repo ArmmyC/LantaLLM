@@ -8,6 +8,7 @@ services:
     environment:
       PLATFORM_EXPORTER_PORT: "9108"
       LITELLM_BASE_URL: ${LITELLM_BASE_URL:-http://litellm:4000}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
       SLURM_JOB_NAME: ${SLURM_JOB_NAME:-vllm-model}
       SLURM_USER: ${SLURM_USER:-}

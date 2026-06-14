@@ -21,6 +21,8 @@ def test_platform_status_response_shape(monkeypatch) -> None:
     assert data["model"]["public_alias"] == "active-lanta-model"
     assert data["model"]["vllm_reported_model_id"] == "qwen36-27b"
     assert data["components"]["litellm_models"]["status"] == "ok"
+    assert data["links"]["grafana"] == "http://127.0.0.1:3002"
+    assert data["links"]["openwebui"] == "http://127.0.0.1:3000"
     assert "sk-test-secret" not in str(data)
 
 
@@ -40,9 +42,23 @@ def test_platform_status_degrades_when_alias_missing(monkeypatch) -> None:
     assert data["warnings"]
 
 
+def test_platform_status_is_down_when_core_inference_is_down(monkeypatch) -> None:
+    def fake_probe(url: str, timeout: float, headers: dict[str, str] | None = None) -> tuple[str, float, str, dict[str, Any] | None]:
+        if url.endswith("/models") and "host.docker.internal" in url:
+            return "down", 10.0, "connection refused", None
+        if url.endswith("/v1/models"):
+            return "ok", 10.0, "ok", {"data": [{"id": "active-lanta-model"}]}
+        return "ok", 5.0, "ok", {}
+
+    monkeypatch.setattr(platform_status, "http_probe", fake_probe)
+    data = platform_status.build_platform_status()
+    assert data["overall_status"] == "down"
+
+
 def test_platform_usage_reports_unavailable_without_prometheus(monkeypatch) -> None:
     monkeypatch.setattr(platform_status, "prometheus_query", lambda query, timeout: None)
     data = platform_status.build_platform_usage("1h")
+    assert data["experimental"] is True
     assert data["error"] == "metrics_unavailable"
     assert "grafana_url" in data
 
@@ -64,6 +80,8 @@ def test_platform_usage_returns_prometheus_values(monkeypatch) -> None:
     monkeypatch.setattr(platform_status, "prometheus_breakdown", fake_breakdown)
     data = platform_status.build_platform_usage("1h")
 
+    assert data["experimental"] is True
+    assert "Grafana is the source of truth" in data["detail"]
     assert data["requests_total"] == 508.0
     assert data["input_tokens_total"] == 13169.0
     assert data["latency_p95_ms"] == 480.0

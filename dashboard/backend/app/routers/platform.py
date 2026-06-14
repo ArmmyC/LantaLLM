@@ -35,6 +35,7 @@ def status_page() -> HTMLResponse:
             "</tr>"
         )
     warnings = "".join(f"<li>{escape(item)}</li>" for item in data["warnings"]) or "<li>No warnings.</li>"
+    links = data["links"]
     html = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -54,7 +55,7 @@ def status_page() -> HTMLResponse:
   </style>
 </head>
 <body>
-  <nav><a href="/">Benchmark Overview</a> | <a href="/status">Platform Status</a> | <a href="/usage">Usage</a> | <a href="/runs">Runs</a> | <a href="/cases">Cases</a></nav>
+  <nav><a href="/status">Platform Status</a> | <a href="/usage">Usage in Grafana</a> | <a href="/benchmarks">Optional Benchmarks</a></nav>
   <h1>Lanta LLM Platform Status</h1>
   <div class="metric"><strong>Overall</strong><br>{escape(str(data['overall_status']))}</div>
   <div class="metric"><strong>Public alias</strong><br>{escape(str(data['model']['public_alias']))}</div>
@@ -64,8 +65,15 @@ def status_page() -> HTMLResponse:
   <table><tr><th>Component</th><th>Status</th><th>Latency ms</th><th>Message</th></tr>{''.join(rows)}</table>
   <h2>Suggested Fixes</h2>
   <ul>{warnings}</ul>
-  <h2>Usage</h2>
-  <p><a href="/usage">Open usage summary</a>. Detailed charts are also available in Grafana.</p>
+  <h2>Admin Links</h2>
+  <ul>
+    <li><a href="{escape(str(links['openwebui']))}">OpenWebUI chat</a></li>
+    <li><a href="{escape(str(links['grafana']))}">Grafana usage and metrics</a></li>
+    <li><a href="{escape(str(links['prometheus']))}">Prometheus</a></li>
+    <li><a href="{escape(str(links['litellm_models_docs']))}">LiteLLM model/API documentation</a></li>
+    <li><a href="{escape(str(links['key_management_docs']))}">Key management documentation</a></li>
+    <li><a href="{escape(str(links['operations_docs']))}">Operations documentation</a></li>
+  </ul>
 </body>
 </html>"""
     return HTMLResponse(html)
@@ -74,44 +82,6 @@ def status_page() -> HTMLResponse:
 @router.get("/usage", response_class=HTMLResponse)
 def usage_page(window: str = Query("1h", pattern=r"^[0-9]+[smhd]$")) -> HTMLResponse:
     data = build_platform_usage(window)
-    if data.get("error"):
-        body = f"<p>{escape(str(data['detail']))}</p>"
-    else:
-        metric_names = [
-            "requests_total",
-            "requests_per_second",
-            "errors_total",
-            "error_rate",
-            "input_tokens_total",
-            "output_tokens_total",
-            "output_tokens_per_second",
-            "latency_p50_ms",
-            "latency_p95_ms",
-        ]
-        metrics = "".join(
-            f'<div class="metric"><strong>{escape(name)}</strong><br>{escape(str(data.get(name)))}</div>'
-            for name in metric_names
-        )
-        key_rows = "".join(
-            "<tr>"
-            f"<td>{escape(str(item.get('api_key_alias', 'unknown')))}</td>"
-            f"<td>{escape(str(item.get('user', 'unknown')))}</td>"
-            f"<td>{escape(str(item.get('tokens_total', 0)))}</td>"
-            "</tr>"
-            for item in data.get("by_key", [])
-        ) or '<tr><td colspan="3">No key-level usage labels available.</td></tr>'
-        model_rows = "".join(
-            "<tr>"
-            f"<td>{escape(str(item.get('model', 'unknown')))}</td>"
-            f"<td>{escape(str(item.get('tokens_total', 0)))}</td>"
-            "</tr>"
-            for item in data.get("by_model", [])
-        ) or '<tr><td colspan="2">No model usage labels available.</td></tr>'
-        body = (
-            metrics
-            + f"<h2>Usage By Key Alias/User</h2><table><tr><th>Key Alias</th><th>User</th><th>Tokens</th></tr>{key_rows}</table>"
-            + f"<h2>Usage By Model</h2><table><tr><th>Model</th><th>Tokens</th></tr>{model_rows}</table>"
-        )
     grafana_url = escape(str(data.get("grafana_url", "http://127.0.0.1:3002")))
     html = f"""<!doctype html>
 <html lang="en">
@@ -122,17 +92,18 @@ def usage_page(window: str = Query("1h", pattern=r"^[0-9]+[smhd]$")) -> HTMLResp
   <style>
     body {{ font-family: Inter, system-ui, sans-serif; margin: 32px; background: #f7f9f7; color: #172017; }}
     a {{ color: #245b2a; }}
-    table {{ border-collapse: collapse; width: 100%; background: white; margin-bottom: 24px; }}
-    th, td {{ border: 1px solid #d9e2d8; padding: 8px; text-align: left; }}
-    th {{ background: #edf4ed; }}
-    .metric {{ display: inline-block; margin: 8px 12px 8px 0; padding: 12px; background: white; border: 1px solid #d9e2d8; }}
+    .panel {{ max-width: 720px; padding: 20px; background: white; border: 1px solid #d9e2d8; }}
   </style>
 </head>
 <body>
-  <nav><a href="/status">Platform Status</a> | <a href="/usage">Usage</a> | <a href="/runs">Benchmark Runs</a></nav>
-  <h1>Lanta LLM Usage</h1>
-  <p>Window: {escape(window)}. <a href="{grafana_url}">Open Grafana for time-series charts</a>.</p>
-  {body}
+  <nav><a href="/status">Platform Status</a> | <a href="/usage">Usage in Grafana</a></nav>
+  <h1>Usage Charts Live in Grafana</h1>
+  <div class="panel">
+    <p>Grafana is the source of truth for request, token, latency, error, key/user, and model usage charts.</p>
+    <p><strong>Dashboard:</strong> Lanta LLM Operations</p>
+    <p><a href="{grafana_url}">Open Grafana</a></p>
+    <p><small>The machine-readable <code>/api/platform/usage</code> endpoint remains available as an experimental diagnostic summary only.</small></p>
+  </div>
 </body>
 </html>"""
     return HTMLResponse(html)

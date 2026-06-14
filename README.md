@@ -1,6 +1,6 @@
 # Lanta LLM Hosting
 
-Host a private LLM on Lanta with OpenWebUI for chat users, LiteLLM virtual keys for API users, and local health and usage dashboards for the admin.
+Host a private LLM on Lanta with OpenWebUI for chat users, LiteLLM virtual keys for API users, Grafana for metrics and usage, and a lightweight admin status page.
 
 ## Repository Layout
 
@@ -14,7 +14,7 @@ lanta-llm-hosting/
   openwebui/            Primary browser chat UI backed by LiteLLM.
   observability/        Prometheus, Grafana, and platform exporter.
   benchmark/            HDL benchmark cases, runner, schemas, and artifacts.
-  dashboard/            Hosting status/usage pages plus optional benchmark APIs.
+  dashboard/            Lightweight admin status landing page plus optional benchmark APIs.
   lanta/scripts/        Generic model download, serve, submit, and test scripts.
   lanta/legacy-qwen36/  Older Qwen3.6-specific scripts kept for reference.
   docs/                 Setup, model swapping, UI, and friend usage guides.
@@ -51,8 +51,8 @@ Open:
 ```text
 Chat:   http://127.0.0.1:3000
 Status: http://127.0.0.1:8088/status
-Usage:  http://127.0.0.1:8088/usage
-Grafana: http://127.0.0.1:3002
+Usage and metrics: http://127.0.0.1:3002
+Admin status:      http://127.0.0.1:8088/status
 ```
 
 See [HOW_TO_USE.md](HOW_TO_USE.md) for the complete operational command list and [HOW_TO_SWAP.md](HOW_TO_SWAP.md) for model swapping.
@@ -89,6 +89,16 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-platform.ps1
 ```
 
 The existing `website/` remains as a fallback compatibility/demo UI. Benchmark tooling is optional and does not drive the hosting dashboard.
+
+Component split:
+
+```text
+OpenWebUI = chat UI
+LiteLLM = API gateway and virtual keys
+Grafana = metrics and usage dashboard
+Custom dashboard = /status admin landing page
+Benchmark = optional
+```
 
 ## Lanta Deployment
 

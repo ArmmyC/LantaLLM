@@ -3,7 +3,7 @@ from __future__ import annotations
 from html import escape
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from ..database import load_store
 from ..schemas import validate_case_id, validate_run_id
@@ -31,14 +31,19 @@ def page(title: str, body: str) -> HTMLResponse:
   </style>
 </head>
 <body>
-  <nav><a href="/">Overview</a> | <a href="/runs">Runs</a> | <a href="/cases">Cases</a></nav>
+  <nav><a href="/status">Platform Status</a> | <a href="/benchmarks">Benchmark Overview</a> | <a href="/runs">Runs</a> | <a href="/cases">Cases</a></nav>
   {body}
 </body>
 </html>"""
     )
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", include_in_schema=False)
+def dashboard_root() -> RedirectResponse:
+    return RedirectResponse(url="/status", status_code=307)
+
+
+@router.get("/benchmarks", response_class=HTMLResponse)
 def overview() -> HTMLResponse:
     stats = summary_data()
     if stats["total_runs"] == 0:

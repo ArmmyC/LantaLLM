@@ -64,6 +64,22 @@ def platform_config() -> dict[str, str]:
         "prometheus_base_url": env("PROMETHEUS_BASE_URL", "http://prometheus:9090").rstrip("/"),
         "grafana_base_url": env("GRAFANA_BASE_URL", "http://grafana:3000").rstrip("/"),
         "grafana_public_url": env("GRAFANA_PUBLIC_URL", "http://127.0.0.1:3002").rstrip("/"),
+        "openwebui_public_url": env("OPENWEBUI_PUBLIC_URL", "http://127.0.0.1:3000").rstrip("/"),
+        "prometheus_public_url": env("PROMETHEUS_PUBLIC_URL", "http://127.0.0.1:9090").rstrip("/"),
+        "litellm_public_url": env("LITELLM_PUBLIC_URL", "http://127.0.0.1:4000/v1").rstrip("/"),
+        "dashboard_public_url": env("DASHBOARD_PUBLIC_URL", "http://127.0.0.1:8088").rstrip("/"),
+        "key_docs_url": env(
+            "KEY_MANAGEMENT_DOCS_URL",
+            "https://github.com/ArmmyC/Lanta-LLM-Hosting/blob/main/docs/KEY_MANAGEMENT.md",
+        ),
+        "operations_docs_url": env(
+            "OPERATIONS_DOCS_URL",
+            "https://github.com/ArmmyC/Lanta-LLM-Hosting/blob/main/docs/OPERATIONS.md",
+        ),
+        "litellm_docs_url": env(
+            "LITELLM_MODELS_DOCS_URL",
+            "https://github.com/ArmmyC/Lanta-LLM-Hosting/blob/main/litellm/README.md",
+        ),
     }
 
 
@@ -119,7 +135,13 @@ def build_platform_status() -> dict[str, Any]:
         warnings.append("Grafana is not reachable. Check port 3002 and Grafana container logs.")
 
     components["dashboard"] = component("ok", 0, "ok")
-    overall_status = "ok" if all(item["status"] == "ok" for item in components.values()) else "degraded"
+    core_components = ("litellm", "litellm_models", "vllm_tunnel")
+    if any(components[name]["status"] == "down" for name in core_components):
+        overall_status = "down"
+    elif all(item["status"] == "ok" for item in components.values()):
+        overall_status = "ok"
+    else:
+        overall_status = "degraded"
 
     return {
         "timestamp": utc_timestamp(),
@@ -129,6 +151,16 @@ def build_platform_status() -> dict[str, Any]:
             "vllm_reported_model_id": vllm_model_id,
         },
         "components": components,
+        "links": {
+            "openwebui": cfg["openwebui_public_url"],
+            "grafana": cfg["grafana_public_url"],
+            "prometheus": cfg["prometheus_public_url"],
+            "litellm_api": cfg["litellm_public_url"],
+            "litellm_models_docs": cfg["litellm_docs_url"],
+            "key_management_docs": cfg["key_docs_url"],
+            "operations_docs": cfg["operations_docs_url"],
+            "status": f"{cfg['dashboard_public_url']}/status",
+        },
         "warnings": warnings,
     }
 
@@ -184,8 +216,9 @@ def build_platform_usage(window: str) -> dict[str, Any]:
         return {
             "timestamp": utc_timestamp(),
             "window": window,
+            "experimental": True,
             "error": "metrics_unavailable",
-            "detail": "Prometheus is not reachable from the dashboard. Use Grafana after observability is running.",
+            "detail": "Experimental diagnostic summary unavailable because Prometheus is not reachable. Grafana remains the usage dashboard.",
             "grafana_url": platform_config()["grafana_public_url"],
         }
     requests_total = prometheus_first(
@@ -241,6 +274,7 @@ def build_platform_usage(window: str) -> dict[str, Any]:
     return {
         "timestamp": utc_timestamp(),
         "window": window,
+        "experimental": True,
         "requests_total": requests_total,
         "requests_per_second": requests_per_second,
         "errors_total": errors_total,
@@ -252,6 +286,6 @@ def build_platform_usage(window: str) -> dict[str, Any]:
         "latency_p95_ms": latency_p95_ms,
         "by_key": by_key,
         "by_model": by_model,
-        "detail": "Values come from Prometheus metrics exported by LiteLLM. Null means that metric is unavailable in the running LiteLLM version.",
+        "detail": "Experimental diagnostic summary only. Grafana is the source of truth for usage, token, latency, and error charts. Null means a metric is unavailable.",
         "grafana_url": platform_config()["grafana_public_url"],
     }

@@ -60,7 +60,7 @@ Benchmark Dashboard API
 - `openwebui/`: primary human chat UI.
 - `observability/`: Prometheus, Grafana, and platform exporter.
 - `benchmark/`: optional HDL benchmark cases, runner, evaluators, schemas, migrations, and artifacts.
-- `dashboard/`: hosting status and usage pages plus retained benchmark APIs.
+- `dashboard/`: lightweight `/status` admin landing page plus retained benchmark APIs. `/usage` only points admins to Grafana.
 - `website/`: existing fallback demo UI, intentionally retained.
 - `sharing/`: existing compatibility gateway, retained but no longer preferred.
 

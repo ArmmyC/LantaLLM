@@ -154,11 +154,10 @@ Hosting dashboard:
 
 ```text
 Status: http://127.0.0.1:8088/status
-Usage:  http://127.0.0.1:8088/usage
 API:    http://127.0.0.1:8088/api/platform/status
 ```
 
-Request, error, token, and latency metrics come from LiteLLM through Prometheus. Slurm and GPU panels are optional and remain empty until Lanta-side exporters are configured.
+Use Grafana at `http://127.0.0.1:3002` for request, token, latency, error, and usage charts. The custom dashboard is only an admin status/links page. Slurm and GPU panels are optional and remain empty until Lanta-side exporters are configured.
 
 ## 6. Start Hosting Dashboard
 
@@ -171,8 +170,9 @@ Open:
 
 ```text
 http://127.0.0.1:8088/status
-http://127.0.0.1:8088/usage
 ```
+
+`http://127.0.0.1:8088/usage` is a small link page that sends admins to Grafana. `/api/platform/usage` remains an experimental machine-readable diagnostic endpoint, not the primary dashboard.
 
 ## LiteLLM Virtual Keys
 

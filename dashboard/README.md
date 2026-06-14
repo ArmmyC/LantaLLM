@@ -1,6 +1,6 @@
 # Lanta LLM Dashboard
 
-Dashboard backend for the Lanta LLM platform. It keeps the existing benchmark APIs and adds hosting/admin status endpoints.
+Lightweight admin landing/status service for the Lanta LLM platform. It keeps the existing benchmark APIs, but Grafana remains the metrics and usage dashboard.
 
 ## Start
 
@@ -33,6 +33,6 @@ http://127.0.0.1:8088/cases
 
 `/status` checks OpenWebUI, LiteLLM, LiteLLM models, the vLLM tunnel, platform exporter, Prometheus, Grafana, and the dashboard itself.
 
-`/usage` reads current LiteLLM request, error, token, latency, key-alias, and model metrics from Prometheus. Grafana remains the detailed time-series dashboard.
+`/usage` is a simple Grafana link/guide page and does not duplicate charts. `/api/platform/usage` is an experimental machine-readable diagnostic summary only.
 
 The first implementation reads the local JSON fallback at `benchmark/results/benchmark-results.json`. PostgreSQL migrations are provided under `benchmark/storage/migrations/` for durable deployments.

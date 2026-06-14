@@ -1,13 +1,17 @@
-{
-  "id": "rtl_counter",
-  "title": "Low-power enabled counter",
-  "task_type": "rtl_generation",
-  "description": "Generate a synthesizable low-power counter with enable.",
-  "prompt": "Create a synthesizable SystemVerilog module named lp_counter. It must have clk, rst_n, en, and an 8-bit count output. The counter increments only when en is high and otherwise holds state. Optimize for low area and low dynamic power.",
-  "expected_language": "systemverilog",
-  "expected_module_name": "lp_counter",
-  "timeout_seconds": 120,
-  "evaluator_config": {
-    "required_terms": ["module lp_counter", "always_ff", "en"]
-  }
-}
+id: rtl_counter
+title: Low-power enabled counter
+task_type: rtl_generation
+description: Generate a synthesizable low-power counter with enable.
+prompt: >
+  Create a synthesizable SystemVerilog module named lp_counter. It must have
+  clk, rst_n, en, and an 8-bit count output. The counter increments only when
+  en is high and otherwise holds state. Optimize for low area and low dynamic
+  power.
+expected_language: systemverilog
+expected_module_name: lp_counter
+timeout_seconds: 120
+evaluator_config:
+  required_terms:
+    - module lp_counter
+    - always_ff
+    - en

@@ -15,6 +15,7 @@ from urllib.request import Request, urlopen
 from benchmark.evaluators.compile_sv import compile_systemverilog
 from benchmark.evaluators.extract_code import extract_code_block
 from benchmark.evaluators.score import classify_static_failure, numeric_score
+from benchmark.evaluators.simulate import simulate_vvp
 from benchmark.storage.db import result_store
 from benchmark.storage.models import BenchmarkResult, BenchmarkRun, utc_now
 
@@ -26,9 +27,15 @@ ALLOWED_TASK_TYPES = {"rtl_generation", "testbench_generation", "rtl_debugging",
 def load_case(path: Path) -> dict[str, Any]:
     text = path.read_text(encoding="utf-8")
     try:
-        data = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"{path}: invalid JSON/YAML subset: {exc}") from exc
+        import yaml
+    except ImportError as exc:
+        raise ValueError("PyYAML is required to load benchmark case YAML files") from exc
+    try:
+        data = yaml.safe_load(text)
+    except Exception as exc:
+        raise ValueError(f"{path}: invalid YAML: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: benchmark case must be a YAML mapping")
     data.setdefault("expected_language", "systemverilog")
     data.setdefault("timeout_seconds", 120)
     data.setdefault("evaluator_config", {})
@@ -125,6 +132,18 @@ def write_artifact(root: Path, run_id: str, case_id: str, name: str, content: st
     return str(path.relative_to(root))
 
 
+def auxiliary_paths(case: dict[str, Any]) -> list[Path]:
+    paths: list[Path] = []
+    for raw_path in case.get("evaluator_config", {}).get("auxiliary_files", []):
+        path = Path(str(raw_path))
+        if not path.is_absolute():
+            path = REPO_ROOT / path
+        if not path.exists():
+            raise FileNotFoundError(f"auxiliary file not found: {path}")
+        paths.append(path)
+    return paths
+
+
 def run_case(case: dict[str, Any], run: BenchmarkRun, system_prompt: str, args: argparse.Namespace) -> BenchmarkResult:
     result = BenchmarkResult(run_id=run.id, case_id=case["id"], model_alias=args.model, prompt_version=args.prompt_version)
     messages = build_prompt(system_prompt, case)
@@ -159,12 +178,36 @@ def run_case(case: dict[str, Any], run: BenchmarkRun, system_prompt: str, args: 
         result.score = numeric_score(status)
         if extraction.code and not args.skip_compile:
             source_path = REPO_ROOT / str(result.extracted_code_path)
-            compile_status, compile_log = compile_systemverilog(source_path, case["timeout_seconds"])
+            compile_status, compile_log, compiled_path = compile_systemverilog(source_path, case["timeout_seconds"], auxiliary_paths(case))
             result.compile_status = compile_status
             result.compile_log_path = write_artifact(REPO_ROOT, run.id, case["id"], "compile.log", compile_log)
+            if compile_status == "failed":
+                result.status = "failed"
+                result.failure_category = "compile_error"
+                result.score = numeric_score(result.status)
+            elif compile_status == "timeout":
+                result.status = "failed"
+                result.failure_category = "timeout"
+                result.score = numeric_score(result.status)
+            elif compile_status == "passed":
+                simulation_status, simulation_log = simulate_vvp(compiled_path, case["timeout_seconds"])
+                result.simulation_status = simulation_status
+                result.simulation_log_path = write_artifact(REPO_ROOT, run.id, case["id"], "simulation.log", simulation_log)
+                if simulation_status == "failed":
+                    result.status = "failed"
+                    result.failure_category = "simulation_mismatch"
+                    result.score = numeric_score(result.status)
+                elif simulation_status == "timeout":
+                    result.status = "failed"
+                    result.failure_category = "timeout"
+                    result.score = numeric_score(result.status)
+                elif simulation_status in {"passed", "tool_missing", "not_run"} and result.status == "passed":
+                    result.failure_category = "none"
+            else:
+                result.simulation_status = "not_run"
         else:
             result.compile_status = "not_run"
-        result.simulation_status = "not_run"
+            result.simulation_status = "not_run"
     except TimeoutError as exc:
         result.status = "error"
         result.failure_category = "timeout"

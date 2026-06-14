@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from dashboard.backend.app import database
 from dashboard.backend.app.database import REPO_ROOT, safe_artifact_path
 from dashboard.backend.app.schemas import validate_case_id, validate_result_shape, validate_run_id
 
@@ -13,6 +14,12 @@ def test_artifact_resolver_rejects_path_traversal() -> None:
 def test_artifact_resolver_accepts_artifact_root_path() -> None:
     path = safe_artifact_path("benchmark/artifacts/run/case/raw_response.md")
     assert path == (REPO_ROOT / "benchmark/artifacts/run/case/raw_response.md").resolve()
+
+
+def test_artifact_resolver_maps_repo_relative_path_to_docker_root(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("DASHBOARD_ARTIFACT_ROOT", str(tmp_path))
+    path = database.safe_artifact_path("benchmark/artifacts/run/case/raw_response.md")
+    assert path == (tmp_path / "run/case/raw_response.md").resolve()
 
 
 def test_id_validation() -> None:

@@ -8,7 +8,10 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_STORE = REPO_ROOT / "benchmark" / "results" / "benchmark-results.json"
-ARTIFACT_ROOT = REPO_ROOT / "benchmark" / "artifacts"
+
+
+def artifact_root() -> Path:
+    return Path(os.environ.get("DASHBOARD_ARTIFACT_ROOT", str(REPO_ROOT / "benchmark" / "artifacts"))).resolve()
 
 
 def load_store() -> dict[str, Any]:
@@ -81,8 +84,16 @@ def serialize_row(row: dict[str, Any]) -> dict[str, Any]:
 def safe_artifact_path(relative_path: str) -> Path | None:
     if not relative_path:
         return None
-    candidate = (REPO_ROOT / relative_path).resolve()
-    root = ARTIFACT_ROOT.resolve()
+    raw = Path(relative_path)
+    root = artifact_root()
+    if raw.is_absolute():
+        candidate = raw.resolve()
+    else:
+        parts = raw.parts
+        if len(parts) >= 2 and parts[0] == "benchmark" and parts[1] == "artifacts":
+            candidate = root.joinpath(*parts[2:]).resolve()
+        else:
+            candidate = (REPO_ROOT / raw).resolve()
     try:
         candidate.relative_to(root)
     except ValueError:

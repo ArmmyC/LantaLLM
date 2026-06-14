@@ -21,7 +21,8 @@ Required values in `.env`:
 ## Verify
 
 ```powershell
-curl.exe http://127.0.0.1:4000/v1/models -H "Authorization: Bearer %LITELLM_MASTER_KEY%"
+$env:LITELLM_MASTER_KEY="sk-change-this-master-key"
+curl.exe http://127.0.0.1:4000/v1/models -H "Authorization: Bearer $env:LITELLM_MASTER_KEY"
 ```
 
 ## Virtual Keys

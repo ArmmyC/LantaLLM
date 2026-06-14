@@ -1,13 +1,19 @@
-{
-  "id": "testbench_counter",
-  "title": "Counter testbench",
-  "task_type": "testbench_generation",
-  "description": "Generate a compact SystemVerilog testbench for the low-power counter.",
-  "prompt": "Create a SystemVerilog testbench for a module named lp_counter with clk, rst_n, en, and count[7:0]. The testbench should reset the DUT, verify hold behavior when en is low, verify increment behavior when en is high, and report pass/fail.",
-  "expected_language": "systemverilog",
-  "expected_module_name": "tb_lp_counter",
-  "timeout_seconds": 120,
-  "evaluator_config": {
-    "required_terms": ["module", "lp_counter", "initial"]
-  }
-}
+id: testbench_counter
+title: Counter testbench
+task_type: testbench_generation
+description: Generate a compact SystemVerilog testbench for the low-power counter.
+prompt: >
+  Create a SystemVerilog testbench for a module named lp_counter with clk,
+  rst_n, en, and count[7:0]. The testbench should reset the DUT, verify hold
+  behavior when en is low, verify increment behavior when en is high, and
+  report pass/fail.
+expected_language: systemverilog
+expected_module_name: tb_lp_counter
+timeout_seconds: 120
+evaluator_config:
+  required_terms:
+    - module
+    - lp_counter
+    - initial
+  auxiliary_files:
+    - benchmark/fixtures/lp_counter.sv

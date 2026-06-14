@@ -91,6 +91,7 @@ def test_compile_failure_marks_result_failed(monkeypatch: pytest.MonkeyPatch) ->
     def fake_compile(source_path: Path, timeout_seconds: int, auxiliary_files: list[Path] | None = None):
         return "failed", "syntax error", source_path.with_suffix(".vvp")
 
+    monkeypatch.setattr(run_suite, "write_artifact", lambda root, run_id, case_id, name, content: f"benchmark/artifacts/test/{name}")
     monkeypatch.setattr(run_suite, "compile_systemverilog", fake_compile)
     result = run_suite.run_case(case, run, "system", args)
     assert result.status == "failed"
@@ -113,6 +114,7 @@ def test_simulation_runs_after_compile_pass(monkeypatch: pytest.MonkeyPatch) -> 
         called["simulate"] = True
         return "passed", "PASS"
 
+    monkeypatch.setattr(run_suite, "write_artifact", lambda root, run_id, case_id, name, content: f"benchmark/artifacts/test/{name}")
     monkeypatch.setattr(run_suite, "compile_systemverilog", fake_compile)
     monkeypatch.setattr(run_suite, "simulate_vvp", fake_simulate)
     result = run_suite.run_case(case, run, "system", args)

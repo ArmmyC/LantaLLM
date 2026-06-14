@@ -14,6 +14,7 @@ FAILURE_CATEGORIES = {
     "no_code_block",
     "wrong_module_name",
     "missing_port",
+    "missing_required_term",
     "syntax_error",
     "compile_error",
     "simulation_mismatch",

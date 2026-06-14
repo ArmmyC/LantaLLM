@@ -27,8 +27,18 @@ Lanta LLM Operations
 
 Prometheus scrapes:
 
-- LiteLLM metrics from `host.docker.internal:4000/metrics`
+- LiteLLM metrics from `litellm:4000/metrics` on the shared Docker network
 - Platform exporter metrics from `platform-exporter:9108/metrics`
+
+Real LiteLLM metrics currently used by Grafana include:
+
+- total requests and request rate
+- failed requests and error rate
+- input, output, and total tokens
+- output tokens per second
+- p50 and p95 request latency
+- usage grouped by key alias/user when LiteLLM labels are available
+- usage grouped by model label
 
 The platform exporter checks:
 
@@ -39,3 +49,5 @@ The platform exporter checks:
 - Slurm job state where Slurm is available
 
 If Slurm is unavailable, Slurm metrics report unknown or zero health instead of crashing.
+
+Slurm and GPU panels are optional. They require Lanta-side exporters or direct Slurm metric collection. No data in those panels is expected until those exporters are configured.

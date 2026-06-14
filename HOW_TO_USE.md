@@ -58,7 +58,7 @@ powershell -ExecutionPolicy Bypass -File .\windows\tunnel\stop-lanta-vllm-tunnel
 powershell -ExecutionPolicy Bypass -File .\windows\tunnel\test-local-vllm-api.ps1
 ```
 
-## Start Website
+## Start Legacy Website (Optional)
 
 ```powershell
 cd D:\ArmmyWorkspace\SiliconCraft\lanta-llm-hosting\website
@@ -116,7 +116,7 @@ powershell -ExecutionPolicy Bypass -File .\sharing\start-tailscale-funnel-share.
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\sharing\stop-tailscale-funnel-share.ps1
 ```
-# Preferred Platform Startup
+# Preferred Private Platform Startup
 
 ```powershell
 ssh lanta "cd /project/zz992000-zdevb/zz992005/ub127/SiliconCraft && bash scripts/submit-preset.sh qwen36-35b-a3b"
@@ -143,6 +143,12 @@ docker compose up -d
 ```
 
 ```powershell
+cd D:\ArmmyWorkspace\SiliconCraft\lanta-llm-hosting\dashboard
+docker compose up -d --build
+```
+
+```powershell
 cd D:\ArmmyWorkspace\SiliconCraft\lanta-llm-hosting
-python -m benchmark.runners.run_suite --suite smoke --dry-run
+$env:LITELLM_MASTER_KEY="sk-your-key"
+powershell -ExecutionPolicy Bypass -File .\scripts\check-platform.ps1
 ```

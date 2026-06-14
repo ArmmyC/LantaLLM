@@ -1,6 +1,6 @@
 # Lanta LLM Hosting
 
-Host Hugging Face language models on Lanta with Slurm and vLLM, connect from Windows through an auto-reconnecting SSH tunnel, and expose a protected website or OpenAI-compatible API.
+Host a private LLM on Lanta with OpenWebUI for chat users, LiteLLM virtual keys for API users, and local health and usage dashboards for the admin.
 
 ## Repository Layout
 
@@ -14,7 +14,7 @@ lanta-llm-hosting/
   openwebui/            Primary browser chat UI backed by LiteLLM.
   observability/        Prometheus, Grafana, and platform exporter.
   benchmark/            HDL benchmark cases, runner, schemas, and artifacts.
-  dashboard/            Benchmark dashboard API and minimal HTML pages.
+  dashboard/            Hosting status/usage pages plus optional benchmark APIs.
   lanta/scripts/        Generic model download, serve, submit, and test scripts.
   lanta/legacy-qwen36/  Older Qwen3.6-specific scripts kept for reference.
   docs/                 Setup, model swapping, UI, and friend usage guides.
@@ -24,24 +24,36 @@ lanta-llm-hosting/
 
 ## Quick Start
 
-Start the hidden tunnel:
+Start the hidden tunnel after the Lanta vLLM job is running:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\windows\tunnel\start-lanta-vllm-tunnel.ps1
 ```
 
-Start the website:
+Start LiteLLM, OpenWebUI, observability, and the admin dashboard:
 
 ```powershell
-cd website
-$env:QWEN_BASE_URL="http://127.0.0.1:8000/v1"
-$env:QWEN_API_KEY="EMPTY"
-$env:QWEN_MODEL="qwen36-27b"
-$env:SITE_PASSWORD="YOUR_SITE_PASSWORD"
-npm run dev
+cd litellm
+docker compose up -d
+
+cd ..\openwebui
+docker compose up -d
+
+cd ..\observability
+docker compose up -d
+
+cd ..\dashboard
+docker compose up -d --build
 ```
 
-Open `http://127.0.0.1:5177`.
+Open:
+
+```text
+Chat:   http://127.0.0.1:3000
+Status: http://127.0.0.1:8088/status
+Usage:  http://127.0.0.1:8088/usage
+Grafana: http://127.0.0.1:3002
+```
 
 See [HOW_TO_USE.md](HOW_TO_USE.md) for the complete operational command list and [HOW_TO_SWAP.md](HOW_TO_SWAP.md) for model swapping.
 
@@ -60,12 +72,13 @@ Start order:
 3. Start LiteLLM.
 4. Start OpenWebUI.
 5. Start observability stack.
-6. Run benchmark suite.
+6. Start the hosting dashboard.
 
 Key docs:
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Operations](docs/OPERATIONS.md)
+- [Key Management](docs/KEY_MANAGEMENT.md)
 - [Benchmarking](docs/BENCHMARKING.md)
 
 Local stack check:
@@ -75,7 +88,7 @@ $env:LITELLM_MASTER_KEY="sk-your-key"
 powershell -ExecutionPolicy Bypass -File .\scripts\check-platform.ps1
 ```
 
-The existing `website/` remains as a fallback demo UI.
+The existing `website/` remains as a fallback compatibility/demo UI. Benchmark tooling is optional and does not drive the hosting dashboard.
 
 ## Lanta Deployment
 

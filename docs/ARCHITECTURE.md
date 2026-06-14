@@ -34,7 +34,7 @@ Prometheus
 Grafana
 ```
 
-Benchmarking:
+Optional benchmarking:
 
 ```text
 Benchmark Runner
@@ -59,8 +59,8 @@ Benchmark Dashboard API
 - `litellm/`: preferred OpenAI-compatible API gateway, virtual keys, usage, budgets, and metrics.
 - `openwebui/`: primary human chat UI.
 - `observability/`: Prometheus, Grafana, and platform exporter.
-- `benchmark/`: HDL benchmark cases, runner, evaluators, schemas, migrations, and artifacts.
-- `dashboard/`: benchmark dashboard API and minimal HTML pages.
+- `benchmark/`: optional HDL benchmark cases, runner, evaluators, schemas, migrations, and artifacts.
+- `dashboard/`: hosting status and usage pages plus retained benchmark APIs.
 - `website/`: existing fallback demo UI, intentionally retained.
 - `sharing/`: existing compatibility gateway, retained but no longer preferred.
 
@@ -91,4 +91,3 @@ active-lanta-model
 ```
 
 Only one Lanta vLLM model is served on port `8000` at a time in the current design.
-

@@ -7,7 +7,7 @@
 3. Start LiteLLM.
 4. Start OpenWebUI.
 5. Start observability stack.
-6. Run benchmark suite.
+6. Start the hosting dashboard.
 
 ## First Local Run
 
@@ -40,6 +40,12 @@ Run the local platform check:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\check-platform.ps1
+```
+
+Key management docs:
+
+```text
+docs/KEY_MANAGEMENT.md
 ```
 
 ## 1. Start Lanta vLLM
@@ -144,7 +150,33 @@ Grafana dashboard:
 Lanta LLM Operations
 ```
 
+Hosting dashboard:
+
+```text
+Status: http://127.0.0.1:8088/status
+Usage:  http://127.0.0.1:8088/usage
+API:    http://127.0.0.1:8088/api/platform/status
+```
+
+Request, error, token, and latency metrics come from LiteLLM through Prometheus. Slurm and GPU panels are optional and remain empty until Lanta-side exporters are configured.
+
+## 6. Start Hosting Dashboard
+
+```powershell
+cd D:\ArmmyWorkspace\SiliconCraft\lanta-llm-hosting\dashboard
+docker compose up -d --build
+```
+
+Open:
+
+```text
+http://127.0.0.1:8088/status
+http://127.0.0.1:8088/usage
+```
+
 ## LiteLLM Virtual Keys
+
+See [Key Management](KEY_MANAGEMENT.md) for the full admin and user flow. The short version is below.
 
 Create:
 

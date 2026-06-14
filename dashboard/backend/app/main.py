@@ -7,7 +7,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .routers import benchmark_cases, benchmark_runs, health, pages, summary
+from .routers import benchmark_cases, benchmark_runs, health, pages, platform, summary
 
 
 def allowed_origins() -> list[str]:
@@ -15,7 +15,7 @@ def allowed_origins() -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
-app = FastAPI(title="Lanta Benchmark Dashboard API", version="0.1.0")
+app = FastAPI(title="Lanta LLM Hosting Dashboard API", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins(),
@@ -28,6 +28,7 @@ app.include_router(health.router)
 app.include_router(benchmark_runs.router)
 app.include_router(benchmark_cases.router)
 app.include_router(summary.router)
+app.include_router(platform.router)
 app.include_router(pages.router)
 
 

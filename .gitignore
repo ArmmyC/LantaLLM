@@ -12,6 +12,7 @@ venv/
 env/
 envs/
 __pycache__/
+.pytest_cache/
 *.py[cod]
 
 # Model weights and Hugging Face caches

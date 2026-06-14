@@ -10,9 +10,21 @@ services:
       BENCHMARK_JSON_STORE: ${BENCHMARK_JSON_STORE:-/data/benchmark-results.json}
       DASHBOARD_ARTIFACT_ROOT: ${DASHBOARD_ARTIFACT_ROOT:-/artifacts}
       DASHBOARD_DATABASE_URL: ${DASHBOARD_DATABASE_URL:-}
+      DASHBOARD_HEALTH_TIMEOUT_SECONDS: ${DASHBOARD_HEALTH_TIMEOUT_SECONDS:-3}
+      LITELLM_ACTIVE_MODEL: ${LITELLM_ACTIVE_MODEL:-active-lanta-model}
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-http://litellm:4000}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-}
+      OPENWEBUI_BASE_URL: ${OPENWEBUI_BASE_URL:-http://openwebui:8080}
+      PLATFORM_EXPORTER_BASE_URL: ${PLATFORM_EXPORTER_BASE_URL:-http://platform-exporter:9108}
+      PROMETHEUS_BASE_URL: ${PROMETHEUS_BASE_URL:-http://prometheus:9090}
+      GRAFANA_BASE_URL: ${GRAFANA_BASE_URL:-http://grafana:3000}
+      GRAFANA_PUBLIC_URL: ${GRAFANA_PUBLIC_URL:-http://127.0.0.1:3002}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
     volumes:
       - ../benchmark/results:/data:ro
       - ../benchmark/artifacts:/artifacts:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 networks:
   default:

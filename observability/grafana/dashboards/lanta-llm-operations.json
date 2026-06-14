@@ -30,18 +30,18 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "description": "LiteLLM request rate. No metrics yet. Generate a request through OpenWebUI or LiteLLM.",
+      "description": "Request rate from LiteLLM Prometheus counters. No data appears until requests have been made.",
       "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
       "id": 3,
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-      "targets": [{ "expr": "sum(rate(litellm_proxy_total_requests_metric[5m]))", "legendFormat": "requests/s", "refId": "A" }],
+      "targets": [{ "expr": "sum(rate(litellm_proxy_total_requests_metric_total[5m]))", "legendFormat": "requests/s", "refId": "A" }],
       "title": "LiteLLM Request Rate",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "description": "Concurrent in-flight requests when LiteLLM exposes the metric.",
+      "description": "Current in-flight LiteLLM requests. Zero is normal when the platform is idle.",
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
       "id": 4,
@@ -52,51 +52,55 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "description": "Total LiteLLM requests.",
+      "description": "All LiteLLM proxy requests recorded since the current metrics series began.",
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
       "id": 5,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "targets": [{ "expr": "sum(litellm_proxy_total_requests_metric)", "legendFormat": "total", "refId": "A" }],
+      "targets": [{ "expr": "sum(litellm_proxy_total_requests_metric_total)", "legendFormat": "total", "refId": "A" }],
       "title": "Total Requests",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Failed-request rate divided by total-request rate over five minutes.",
       "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 5 },
       "id": 6,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "targets": [{ "expr": "sum(rate(litellm_proxy_failed_requests_metric[5m])) / clamp_min(sum(rate(litellm_proxy_total_requests_metric[5m])), 1)", "legendFormat": "error rate", "refId": "A" }],
+      "targets": [{ "expr": "sum(rate(litellm_proxy_failed_requests_metric_total[5m])) / clamp_min(sum(rate(litellm_proxy_total_requests_metric_total[5m])), 0.000001)", "legendFormat": "error rate", "refId": "A" }],
       "title": "Error Rate",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Median end-to-end LiteLLM request latency. No data appears until requests populate the histogram.",
       "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 5 },
       "id": 7,
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-      "targets": [{ "expr": "histogram_quantile(0.50, sum(rate(litellm_request_latency_seconds_bucket[5m])) by (le)) * 1000", "legendFormat": "p50", "refId": "A" }],
+      "targets": [{ "expr": "histogram_quantile(0.50, sum(rate(litellm_request_total_latency_metric_bucket[5m])) by (le)) * 1000", "legendFormat": "p50", "refId": "A" }],
       "title": "p50 Latency",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "95th percentile end-to-end LiteLLM request latency.",
       "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 5 },
       "id": 8,
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(litellm_request_latency_seconds_bucket[5m])) by (le)) * 1000", "legendFormat": "p95", "refId": "A" }],
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(litellm_request_total_latency_metric_bucket[5m])) by (le)) * 1000", "legendFormat": "p95", "refId": "A" }],
       "title": "p95 Latency",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Output tokens generated per second over one minute.",
       "fieldConfig": { "defaults": { "unit": "tok/s" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 5 },
       "id": 9,
-      "targets": [{ "expr": "sum(rate(litellm_output_tokens_metric[1m]))", "legendFormat": "output token/s", "refId": "A" }],
+      "targets": [{ "expr": "sum(rate(litellm_output_tokens_metric_total[1m]))", "legendFormat": "output token/s", "refId": "A" }],
       "title": "Output Token/s",
       "type": "timeseries"
     },
@@ -110,45 +114,50 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Input tokens processed per minute.",
       "fieldConfig": { "defaults": { "unit": "tpm" }, "overrides": [] },
       "gridPos": { "h": 5, "w": 6, "x": 0, "y": 10 },
       "id": 11,
-      "targets": [{ "expr": "sum(rate(litellm_input_tokens_metric[1m])) * 60", "legendFormat": "input tokens/min", "refId": "A" }],
+      "targets": [{ "expr": "sum(rate(litellm_input_tokens_metric_total[1m])) * 60", "legendFormat": "input tokens/min", "refId": "A" }],
       "title": "Input Tokens/min",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Output tokens generated per minute.",
       "fieldConfig": { "defaults": { "unit": "tpm" }, "overrides": [] },
       "gridPos": { "h": 5, "w": 6, "x": 6, "y": 10 },
       "id": 12,
-      "targets": [{ "expr": "sum(rate(litellm_output_tokens_metric[1m])) * 60", "legendFormat": "output tokens/min", "refId": "A" }],
+      "targets": [{ "expr": "sum(rate(litellm_output_tokens_metric_total[1m])) * 60", "legendFormat": "output tokens/min", "refId": "A" }],
       "title": "Output Tokens/min",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Total input and output tokens recorded by LiteLLM.",
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "gridPos": { "h": 5, "w": 4, "x": 12, "y": 10 },
       "id": 13,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "targets": [{ "expr": "sum(litellm_input_tokens_metric + litellm_output_tokens_metric)", "legendFormat": "tokens", "refId": "A" }],
+      "targets": [{ "expr": "sum(litellm_total_tokens_metric_total)", "legendFormat": "tokens", "refId": "A" }],
       "title": "Total Tokens",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Token usage grouped by LiteLLM key alias and user. Full API keys are never displayed.",
       "gridPos": { "h": 5, "w": 4, "x": 16, "y": 10 },
       "id": 14,
-      "targets": [{ "expr": "sum by (api_key) (litellm_input_tokens_metric + litellm_output_tokens_metric)", "legendFormat": "{{api_key}}", "refId": "A" }],
+      "targets": [{ "expr": "sum by (api_key_alias, user) (litellm_total_tokens_metric_total)", "legendFormat": "{{api_key_alias}} / {{user}}", "refId": "A" }],
       "title": "Usage by API Key/User",
       "type": "barchart"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Token usage grouped by the model label reported by LiteLLM.",
       "gridPos": { "h": 5, "w": 4, "x": 20, "y": 10 },
       "id": 15,
-      "targets": [{ "expr": "sum by (model) (litellm_input_tokens_metric + litellm_output_tokens_metric)", "legendFormat": "{{model}}", "refId": "A" }],
+      "targets": [{ "expr": "sum by (model) (litellm_total_tokens_metric_total)", "legendFormat": "{{model}}", "refId": "A" }],
       "title": "Usage by Model Alias",
       "type": "barchart"
     },
@@ -162,6 +171,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "LiteLLM process uptime from the Prometheus process start metric.",
       "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 16 },
       "id": 17,
@@ -171,6 +181,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "vLLM reachability reported by the local platform exporter.",
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 16 },
       "id": 18,
       "targets": [{ "expr": "lanta_vllm_reachable", "legendFormat": "{{active_model}}", "refId": "A" }],
@@ -222,6 +233,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Optional: local dashboard containers do not have squeue access by default. Unknown or no data is expected until Lanta-side Slurm metrics are exported.",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 21 },
       "id": 24,
       "targets": [{ "expr": "lanta_slurm_vllm_job_running", "legendFormat": "{{state}} {{node}}", "refId": "A" }],
@@ -230,6 +242,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "Optional: requires Lanta-side Slurm job metrics. This is not inferred from the Windows host.",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 21 },
       "id": 25,
       "targets": [{ "expr": "lanta_slurm_active_vllm_job_id", "legendFormat": "{{state}}", "refId": "A" }],
@@ -247,7 +260,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "description": "GPU utilization is shown when a GPU exporter is added to Prometheus.",
+      "description": "Optional: requires a Lanta-side GPU/DCGM exporter configured in Prometheus. No data is expected until that exporter is installed and scraped.",
       "gridPos": { "h": 4, "w": 3, "x": 18, "y": 21 },
       "id": 27,
       "targets": [{ "expr": "DCGM_FI_DEV_GPU_UTIL", "legendFormat": "gpu {{gpu}}", "refId": "A" }],
@@ -256,7 +269,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "description": "GPU memory is shown when a GPU exporter is added to Prometheus.",
+      "description": "Optional: requires a Lanta-side GPU/DCGM exporter configured in Prometheus. No data is expected until that exporter is installed and scraped.",
       "gridPos": { "h": 4, "w": 3, "x": 21, "y": 21 },
       "id": 28,
       "targets": [{ "expr": "DCGM_FI_DEV_FB_USED", "legendFormat": "gpu {{gpu}}", "refId": "A" }],

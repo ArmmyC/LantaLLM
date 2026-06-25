@@ -321,6 +321,3 @@ Confirm Open WebUI points to LiteLLM, not raw vLLM. The Open WebUI API key shoul
 
 </details>
 
-## Naming recommendation
-
-The current name, `Lanta-LLM-Hosting`, is accurate but long. **LantaLLM** is shorter, keeps the Lanta identity, and still communicates the purpose of the project clearly.

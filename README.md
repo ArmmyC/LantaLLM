@@ -1,121 +1,107 @@
+<!-- prettier-ignore -->
 <div align="center">
 
-# Lanta LLM Hosting
+# LantaLLM
 
-**Run a private, OpenAI-compatible LLM platform on Lanta HPC with a stable API,
-a browser chat interface, and production-minded observability.**
+*Run a private, OpenAI-compatible LLM platform on Lanta HPC with a stable API, browser chat, and observability.*
 
-[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![vLLM](https://img.shields.io/badge/Inference-vLLM-4B8BBE)](https://docs.vllm.ai/)
-[![LiteLLM](https://img.shields.io/badge/Gateway-LiteLLM-111827)](https://docs.litellm.ai/)
-[![Open WebUI](https://img.shields.io/badge/Chat-Open_WebUI-10A37F)](https://openwebui.com/)
-[![Tests](https://img.shields.io/badge/tests-11_passing-2EA44F)](#validation)
+![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ed?style=flat-square&logo=docker&logoColor=white)
+![vLLM](https://img.shields.io/badge/Inference-vLLM-4b8bbe?style=flat-square)
+![LiteLLM](https://img.shields.io/badge/Gateway-LiteLLM-111827?style=flat-square)
+![Open WebUI](https://img.shields.io/badge/Chat-Open%20WebUI-10a37f?style=flat-square)
+![Monitoring](https://img.shields.io/badge/Monitoring-Prometheus%20%2B%20Grafana-f97316?style=flat-square)
 
-[Quick start](#quick-start) · [Architecture](#architecture) ·
-[Operations](#operations) · [Documentation](#documentation)
+[Overview](#overview) • [Architecture](#architecture) • [Quick start](#quick-start) • [Service map](#service-map) • [API usage](#api-usage) • [Operations](#operations)
 
 </div>
 
-Lanta LLM Hosting connects a GPU model running under Slurm to a local Windows
-control plane. Users see one durable model name, `active-lanta-model`, while
-administrators can replace the underlying model without reconfiguring clients.
+LantaLLM connects a GPU model running on Lanta HPC to a local Windows control plane. Users and API clients talk to one durable OpenAI-compatible model alias, `active-lanta-model`, while administrators can swap the underlying vLLM model without reconfiguring clients.
 
-It brings together:
-
-- **vLLM on Lanta** for GPU inference.
-- **A self-healing SSH tunnel** that follows the active Slurm compute node.
-- **LiteLLM** for the stable model alias, virtual keys, budgets, and metrics.
-- **Open WebUI** for authenticated browser chat.
-- **Prometheus and Grafana** for health, usage, latency, tokens, and errors.
-- **A compact status dashboard** for operational checks and admin links.
+It combines vLLM, a Slurm-aware SSH tunnel, LiteLLM, Open WebUI, Prometheus, Grafana, and a compact FastAPI status dashboard into one reproducible hosting workflow.
 
 > [!IMPORTANT]
-> This repository is infrastructure for a specific Lanta account and Windows
-> host workflow. Review the remote project path, Slurm directives, secrets, and
-> model storage paths before using it in another environment.
+> This repository is infrastructure for a specific Lanta account, Slurm setup, and Windows host workflow. Review remote paths, Slurm directives, secrets, ports, and model storage paths before adapting it elsewhere.
+
+## Overview
+
+```text
+Lanta GPU node
+  vLLM serves the selected Hugging Face model through an OpenAI-compatible API
+
+Windows host
+  Watchdog-managed SSH tunnel follows the active Slurm compute node
+
+Local platform
+  LiteLLM exposes one stable model alias, Open WebUI provides chat, and monitoring tracks health and usage
+```
+
+The main contract is stable even when the backend model changes:
+
+| Layer | Value |
+| --- | --- |
+| Client model name | `active-lanta-model` |
+| LiteLLM backend | `openai/<served-model-name>` |
+| vLLM served model | Selected Lanta preset |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    U["Open WebUI users"] --> L["LiteLLM :4000"]
-    A["OpenAI-compatible clients"] --> L
+    U["Open WebUI users"] --> W["Open WebUI :3000"]
+    C["OpenAI-compatible clients"] --> L["LiteLLM :4000"]
+    W --> L
     L --> T["SSH tunnel :8000"]
     T --> V["vLLM on Lanta GPU node"]
-    V --> M["Active Hugging Face model"]
+    V --> M["Active model preset"]
     L --> P["Prometheus :9090"]
-    E["Platform exporter"] --> P
+    E["Platform exporter :9108"] --> P
     P --> G["Grafana :3002"]
     D["Status dashboard :8088"] --> L
     D --> E
     D --> P
+    D --> G
 ```
-
-### Stable model contract
-
-Clients always request:
-
-```text
-active-lanta-model
-```
-
-LiteLLM maps that alias to the model currently served by vLLM. This separates
-the public API contract from model deployment details:
-
-```text
-Client model name              active-lanta-model
-LiteLLM backend configuration  openai/<served-model-name>
-vLLM served model              selected Lanta preset
-```
-
-The tunnel watchdog queries Slurm, discovers the active compute node, and
-reconnects when a replacement job starts elsewhere.
 
 ## Features
 
 | Capability | What it provides |
 | --- | --- |
-| Model presets | Reproducible vLLM settings for supported coding models |
-| Reasoning support | Qwen 3.5/3.6 presets enable the vLLM `qwen3` reasoning parser |
-| Stable endpoint | One OpenAI-compatible alias across backend model swaps |
-| Resilient tunnel | PID recovery, duplicate-start protection, and node-change detection |
-| Browser chat | Persistent Open WebUI users, settings, and conversations |
+| Model presets | Repeatable vLLM launch settings for supported coding models |
+| Stable API alias | One OpenAI-compatible model name across backend swaps |
+| Slurm-aware tunnel | Reconnects when the active vLLM job moves to another compute node |
+| Browser chat | Open WebUI accounts, conversations, and settings |
 | API governance | LiteLLM virtual keys, budgets, usage records, and PostgreSQL storage |
-| Observability | Provisioned Prometheus targets and a Grafana operations dashboard |
-| Health view | Status page for Open WebUI, LiteLLM, vLLM, exporter, and monitoring |
-| Controlled sharing | Open WebUI and authenticated compatibility sharing helpers |
+| Observability | Prometheus targets and a provisioned Grafana dashboard |
+| Status dashboard | FastAPI health view for LiteLLM, vLLM, Open WebUI, exporter, and monitoring |
+| Operations scripts | PowerShell checks for platform health and tunnel lifecycle |
 
 ## Prerequisites
 
 ### Windows host
 
-- Windows PowerShell 5.1 or PowerShell 7.
-- Docker Desktop with Docker Compose.
-- OpenSSH with an SSH config alias named `lanta`.
-- Network access to the Lanta login node.
+- Windows PowerShell 5.1 or PowerShell 7
+- Docker Desktop with Docker Compose
+- OpenSSH with an SSH config alias named `lanta`
+- Network access to the Lanta login node
 
-### Lanta
+### Lanta HPC
 
-- A Slurm account with access to GPU nodes.
-- A Python environment containing vLLM.
-- Model files under the configured project directory.
-- This repository's `lanta/scripts/` copied to:
+- Slurm account with GPU-node access
+- Python environment containing vLLM
+- Model files available under the configured Lanta project directory
+- `lanta/scripts/` copied into the remote project scripts directory
 
-  ```text
-  /project/zz992000-zdevb/zz992005/ub127/SiliconCraft/scripts
-  ```
-
-Test the SSH alias before continuing:
+Test the SSH alias first:
 
 ```powershell
-ssh lanta "hostname; squeue -u ub127"
+ssh lanta "hostname; squeue -u <your-user>"
 ```
 
-## Quick Start
+## Quick start
 
 ### 1. Configure local services
 
-Create local environment files from the safe examples:
+Copy the example environment files:
 
 ```powershell
 Copy-Item litellm\.env.example litellm\.env
@@ -124,16 +110,14 @@ Copy-Item observability\.env.example observability\.env
 Copy-Item dashboard\.env.example dashboard\.env
 ```
 
-Replace every `change-this-...` value with a strong secret. The LiteLLM master
-key used by Open WebUI must match the key configured in `litellm/.env`.
+Replace every placeholder secret before starting the platform. The LiteLLM master key used by Open WebUI must match the key configured for LiteLLM.
 
 > [!CAUTION]
-> Never commit `.env` files, generated API keys, `.webui_secret_key`, model
-> weights, or service data. They are intentionally excluded by `.gitignore`.
+> Do not commit `.env` files, generated API keys, service data, model weights, or local runtime folders. Keep administrator keys separate from user-facing virtual keys.
 
-### 2. Submit the model
+### 2. Submit a model on Lanta
 
-The recommended daily RTL model is Qwen3.6-27B:
+Start with the recommended daily preset:
 
 ```powershell
 ssh lanta "cd /project/zz992000-zdevb/zz992005/ub127/SiliconCraft && bash scripts/submit-preset.sh qwen36-27b"
@@ -160,9 +144,9 @@ Watchdog: running
 API:      online (HTTP 200)
 ```
 
-### 4. Start the platform
+### 4. Start the local platform
 
-The Compose projects share the `lanta-llm-platform` Docker network:
+All Compose projects share the `lanta-llm-platform` Docker network:
 
 ```powershell
 docker compose -f litellm/docker-compose.yml up -d
@@ -171,17 +155,16 @@ docker compose -f observability/docker-compose.yml up -d
 docker compose -f dashboard/docker-compose.yml up -d --build
 ```
 
-### 5. Verify everything
+### 5. Verify services
 
 ```powershell
 $env:LITELLM_MASTER_KEY = "sk-your-master-key"
 powershell -ExecutionPolicy Bypass -File .\scripts\check-platform.ps1
 ```
 
-Open [Open WebUI](http://127.0.0.1:3000), create the first administrator
-account, and select `active-lanta-model`.
+Open [Open WebUI](http://127.0.0.1:3000), create the first administrator account, and select `active-lanta-model`.
 
-## Service Map
+## Service map
 
 | Service | URL | Audience |
 | --- | --- | --- |
@@ -193,7 +176,7 @@ account, and select `active-lanta-model`.
 | Prometheus | [127.0.0.1:9090](http://127.0.0.1:9090) | Administrators |
 | Grafana | [127.0.0.1:3002](http://127.0.0.1:3002) | Administrators |
 
-## Supported Model Presets
+## Supported model presets
 
 | Preset | Model | Context | Reasoning parser |
 | --- | --- | ---: | --- |
@@ -203,13 +186,11 @@ account, and select `active-lanta-model`.
 | `qwen25-coder-32b` | Qwen/Qwen2.5-Coder-32B-Instruct | 32,768 | None |
 | `deepseek-coder-v2-lite` | deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct | 32,768 | None |
 
-Only one preset is served at a time. By default, submitting a new preset
-cancels the existing `vllm-model` job. See [How to swap models](HOW_TO_SWAP.md)
-for overrides and verification.
+Only one preset is served at a time by default. Submitting a new preset cancels the existing `vllm-model` job unless overridden.
 
-## API Usage
+## API usage
 
-Use a LiteLLM virtual key rather than the administrator master key:
+Use a LiteLLM virtual key instead of the administrator master key:
 
 ```powershell
 $body = @{
@@ -240,9 +221,6 @@ Model     active-lanta-model
 API key   <LiteLLM virtual key>
 ```
 
-See [LiteLLM key management](docs/KEY_MANAGEMENT.md) for creating, budgeting,
-listing, and revoking user keys.
-
 ## Operations
 
 ### Tunnel lifecycle
@@ -258,7 +236,7 @@ powershell -ExecutionPolicy Bypass -File .\windows\tunnel\stop-lanta-vllm-tunnel
 powershell -ExecutionPolicy Bypass -File .\windows\tunnel\start-lanta-vllm-tunnel.ps1
 ```
 
-Tunnel logs are stored under `windows/tunnel/.tunnel-runtime/`.
+Tunnel logs are written under `windows/tunnel/.tunnel-runtime/`.
 
 ### Service lifecycle
 
@@ -277,42 +255,49 @@ docker compose -f litellm/docker-compose.yml down
 ```
 
 > [!WARNING]
-> Do not add `--volumes` unless you intentionally want to delete persisted
-> Open WebUI accounts and chats, LiteLLM database records, and monitoring data.
+> Do not add `--volumes` unless you intentionally want to delete persisted Open WebUI accounts, LiteLLM records, and monitoring data.
 
 ### Observability
 
-Grafana is the primary view for request volume, tokens, latency, and errors.
-The status dashboard answers a different question: whether each platform
-component is reachable and correctly configured.
-
-Machine-readable status endpoints:
+Grafana is the primary dashboard for request volume, token usage, latency, and errors. The status dashboard focuses on reachability and active-model health.
 
 | Endpoint | Purpose |
 | --- | --- |
 | `GET /api/healthz` | Status dashboard process health |
-| `GET /api/platform/status` | Full component and active-model health |
+| `GET /api/platform/status` | Component and active-model health |
 | `GET /api/platform/usage?window=1h` | Experimental usage summary |
 
-## Sharing And Security
+## Project structure
 
-- Give browser users Open WebUI accounts.
-- Give API users scoped LiteLLM virtual keys.
-- Keep the LiteLLM master key administrator-only.
-- Prefer a private network or authenticated Tailscale route.
-- Never expose raw vLLM, Prometheus, Grafana, or the status dashboard publicly.
-- Revoke leaked virtual keys immediately and rotate affected secrets.
+```text
+.
+├── dashboard/       # FastAPI status dashboard and Compose service
+├── docs/            # Operations and key-management documentation
+├── lanta/scripts/   # Slurm/vLLM submission and model download helpers
+├── litellm/         # LiteLLM gateway, config, and PostgreSQL Compose stack
+├── observability/   # Prometheus, Grafana, and platform exporter
+├── openwebui/       # Open WebUI Compose stack
+├── scripts/         # Local validation and health-check scripts
+├── sharing/         # Compatibility sharing helpers
+├── windows/tunnel/  # SSH tunnel watchdog scripts
+└── HOW_TO_SWAP.md   # Model swap procedure
+```
 
-The `sharing/` helpers exist for compatibility with the earlier authenticated
-gateway flow. LiteLLM is the preferred API boundary.
+## Documentation
+
+- [How to swap models](./HOW_TO_SWAP.md)
+- [LiteLLM key management](./docs/KEY_MANAGEMENT.md)
+- [Operations guide](./docs/OPERATIONS.md)
+- [LiteLLM configuration notes](./litellm/README.md)
+- [Observability notes](./observability/README.md)
+- [Open WebUI notes](./openwebui/README.md)
 
 ## Troubleshooting
 
 <details>
 <summary><strong>The Slurm job is running, but localhost:8000 resets the connection</strong></summary>
 
-The tunnel may still point to an earlier compute node. Restart the watchdog and
-confirm its log names the node shown by `squeue`:
+The tunnel may still point to an earlier compute node. Restart the watchdog and confirm its log names the node shown by `squeue`.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\windows\tunnel\stop-lanta-vllm-tunnel.ps1
@@ -325,78 +310,17 @@ powershell -ExecutionPolicy Bypass -File .\windows\tunnel\status-lanta-vllm-tunn
 <details>
 <summary><strong>LiteLLM does not list active-lanta-model</strong></summary>
 
-Verify the tunnel first, then confirm `VLLM_MODEL_ID`, `VLLM_BASE_URL`, and
-`LITELLM_MASTER_KEY` in `litellm/.env`. Restart LiteLLM after changing its
-environment:
-
-```powershell
-docker compose -f litellm/docker-compose.yml up -d --force-recreate
-```
+Check the vLLM tunnel first, then confirm `VLLM_MODEL_ID`, `VLLM_BASE_URL`, and `VLLM_API_KEY` in `litellm/.env`. Restart LiteLLM after changing its environment.
 
 </details>
 
 <details>
-<summary><strong>Open WebUI still uses old provider settings</strong></summary>
+<summary><strong>Open WebUI cannot chat with the model</strong></summary>
 
-In the Open WebUI admin settings, point the OpenAI-compatible provider to
-`http://litellm:4000/v1`. Keep the model name `active-lanta-model`. Avoid
-deleting the Open WebUI volume just to refresh provider configuration.
+Confirm Open WebUI points to LiteLLM, not raw vLLM. The Open WebUI API key should match the LiteLLM key configured for the UI service.
 
 </details>
 
-<details>
-<summary><strong>Qwen reasoning appears inside content or has only a closing think tag</strong></summary>
+## Naming recommendation
 
-Confirm the Lanta startup log reports `Reasoning parser: qwen3`. Qwen chat
-templates may prefill the opening thinking marker; with vLLM's `qwen3` parser
-enabled, reasoning is returned separately from final response content.
-
-</details>
-
-## Repository Layout
-
-```text
-lanta/scripts/       Slurm submission, model download, and vLLM serving
-windows/tunnel/      Self-healing Windows SSH tunnel
-litellm/             API gateway, model alias, keys, and PostgreSQL
-openwebui/           Browser chat deployment
-observability/       Exporter, Prometheus, and Grafana provisioning
-dashboard/           Operational status service
-scripts/             Platform health and Lanta job helpers
-sharing/             Compatibility sharing gateway and Funnel helpers
-cli/                 PowerShell and Node.js chat clients
-tests/               Runtime, dashboard, exporter, and configuration tests
-docs/                Architecture and operational runbooks
-```
-
-Benchmark development is maintained separately in
-[ArmmyC/RLTBench](https://github.com/ArmmyC/RLTBench).
-
-## Validation
-
-Run the repository checks:
-
-```powershell
-python -m pytest
-python -m compileall dashboard observability
-docker compose -f litellm/docker-compose.yml config --quiet
-docker compose -f openwebui/docker-compose.yml config --quiet
-docker compose -f observability/docker-compose.yml config --quiet
-docker compose -f dashboard/docker-compose.yml config --quiet
-```
-
-The current suite covers model defaults, Qwen reasoning configuration, tunnel
-watchdog behavior, platform status, and exporter metrics.
-
-## Documentation
-
-- [How to use the platform](HOW_TO_USE.md)
-- [How to swap models](HOW_TO_SWAP.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Operations runbook](docs/OPERATIONS.md)
-- [Lanta vLLM setup](docs/lanta-vllm-setup.md)
-- [Open WebUI setup](openwebui/README.md)
-- [LiteLLM gateway](litellm/README.md)
-- [Key management](docs/KEY_MANAGEMENT.md)
-- [Friend CLI usage](docs/friend-cli-usage.md)
-- [Default RTL model decision](docs/default-rtl-model.md)
+The current name, `Lanta-LLM-Hosting`, is accurate but long. **LantaLLM** is shorter, keeps the Lanta identity, and still communicates the purpose of the project clearly.
